@@ -49,12 +49,20 @@ def inside_course(count,course_code,course_name,link):
         tabs = div.find('div',class_='tabs__content island').find_all('div')
 
         try:
-            subject = str(tabs[i].find_all('p')[1]).split('<br/>')
+            tag = tabs[i].find_all('p')[1]
+            if(len(tag)==0):
+                print(year)
+                ul_tag = tabs[i].find('ul').find_all('li')
+                for x in ul_tag:
+                    subject = x.text
+                    print(subject)
+            else:
+                subject = str(tag).split('<br/>')
 
-            subject[0] = subject[0].replace('<p>', '')
-            subject[len(subject) - 1] = subject[len(subject) - 1].replace('</p>', '')
-            print(year)
-            print(subject)
+                subject[0] = subject[0].replace('<p>', '')
+                subject[len(subject) - 1] = subject[len(subject) - 1].replace('</p>', '')
+                print(year)
+                print(subject)
 
         except:
             try:
