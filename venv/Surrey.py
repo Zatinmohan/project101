@@ -2,7 +2,8 @@ from bs4 import BeautifulSoup
 from requests_html import HTMLSession
 from selenium import webdriver
 import requests
-
+from courses_list import course
+from openpyxl import load_workbook,Workbook
 
 def simple_link(url):                                                                           #non javascript
     headers = {'User-Agent': 'Mozilla/5.0'}
@@ -31,16 +32,14 @@ def category(html_page):
         for j in div_tag:
             count += 1
             link = baseUrl + j.find('a').attrs['href']
-            course = j.find('a').find('span').text
-            print(count.__str__() + " "  + course + " " +link)
-            inside_course(count,course,link)
-            break
+            course_name = j.find('a').find('span').text
+            print(count.__str__() + " "  + course_name + " " +link)
+            inside_course(count,course_name,link)
 
 
-def inside_course(count,course,link):
+def inside_course(count,course_name,link):
     page = javascript_link(link)
     body = page.find('body')
-    print(body)
 
     div = body.find('div',class_='dialog-off-canvas-main-canvas').find('div',class_='layout-container').find('main')
     
@@ -63,14 +62,29 @@ def inside_course(count,course,link):
             print(year)
             for j in tr:
                 subject = j.find('td').text
-                print(subject)
+                clist.append(course(count, course_name, link, year, subject))
+                #print(subject)
             print('\n')
     except:
-        print('Null')
+        clist.append(course(count, course_name, link, "null", "null"))
+        #print('Null')
 
 
 if __name__ == '__main__':
+    clist = []
     url = 'https://www.surrey.ac.uk/undergraduate'
     html_page = javascript_link(url)
 
     category(html_page)
+
+    wb = Workbook()
+    file_path = 'C:\\Users\\jatin\\Desktop\\surrey.xlsx'
+    # wb = load_workbook(file_path)
+    sheet = wb.active
+    for i in range(len(clist)):
+        sheet.cell(i + 1, 1).value = clist[i].count
+        sheet.cell(i + 1, 2).value = clist[i].course
+        sheet.cell(i + 1, 3).value = clist[i].year
+        sheet.cell(i + 1, 4).value = clist[i].subject
+        sheet.cell(i + 1, 5).value = clist[i].link
+    wb.save(file_path)

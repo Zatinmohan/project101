@@ -2,6 +2,8 @@ from bs4 import BeautifulSoup
 from requests_html import HTMLSession
 from selenium import webdriver
 import requests
+from courses_list import course
+from openpyxl import load_workbook,Workbook
 
 def simple_link(url):                                                                           #non javascript
     headers = {'User-Agent': 'Mozilla/5.0'}
@@ -33,9 +35,9 @@ def category(html_page):
     div1 = body.find('div', class_='slat slat--notched slat--grey pb-4 md:pb-6').find('div',class_='slat__container').find('div', class_='results-set').find('ol')
 
     all_course_list = div1.find_all('li')
-
+    count=0
     for i in all_course_list:
-
+        count+=1
         link = i.find('a').attrs['href']
         link = link.replace('%2F', '/')
         link = link.replace('%3A', ':')
@@ -43,9 +45,12 @@ def category(html_page):
         link = link.split('url=', 1)[1]
 
         print(link)
-        inside_link(link)
+        if(link!='https://www.qmul.ac.uk/undergraduate/coursefinder/courses/2020/global-law/'):
+            inside_link(count,link)
+        else:
+            print("Problem")
 
-def inside_link(link):
+def inside_link(count,link):
     page_code = javascript_link(link)
     body = page_code.find('body').find('div',class_='slat__container container--xl py-4 centre study-info')
 
@@ -71,13 +76,14 @@ def inside_link(link):
                     print(course_code + " " + course_name + " " + duration + " ")
                     for kk in ul:
                         subject = kk.text
-                        print(" " + year + " " +subject)
+                        clist.append(course(count, course_name, link, year, subject))
+                        #print(" " + year + " " +subject)
 
                 except:
                     year = years_detailes.find('h3').text
                     subject = years_detail.find('h4').text
-
-                    print(" " + year + " " + subject)
+                    clist.append(course(count, course_name, link, year, subject))
+                    #print(" " + year + " " + subject)
 
     except:
         course_n = page_code.find('body').find('section',class_='course slat mt-4').find('div',class_='centre page-heading slat__container container--xl').find('div',class_='grid').find('div',class_='course-title grid__item grid__item--1/2')
@@ -99,24 +105,28 @@ def inside_link(link):
 
             try:
                 ul = jj.find('ul').find_all('li')
-                print(course_code + " " + course_name + " " + duration + " ")
+                #print(course_code + " " + course_name + " " + duration + " ")
                 for kk in ul:
                     subject = kk.text
-                    print(" " + year + " " + subject)
+                    clist.append(course(count, course_name, link, year, subject))
+                    #print(" " + year + " " + subject)
             except:
                 years_detailes = years_detail.find('div')
                 try:
                     year = years_detailes.find('h3', class_='year').text
                     subject = years_detail.find('h4').text
-                    print(" " + year + " " + subject)
+                    clist.append(course(count, course_name, link, year, subject))
+                    #print(" " + year + " " + subject)
                 except:
                     para = years_detail.find_all('p')
 
                     for l in para:
                         subject = l.text
-                        print(" " + year + " " + subject)
+                        clist.append(course(count, course_name, link, year, subject))
+                        #print(" " + year + " " + subject)
 
 if __name__ == '__main__':
+    clist = []
 
     url = "https://search.qmul.ac.uk/s/search.html?collection=queenmary-coursefinder-undergraduate-meta&query=&sort=title"
     html_page = simple_link(url)
@@ -177,3 +187,15 @@ if __name__ == '__main__':
     url = "https://search.qmul.ac.uk/s/search.html?meta_yearentry_sand=2020&collection=queenmary-coursefinder-undergraduate-meta&form=simple&start_rank=141"
     html_page = simple_link(url)
     category(html_page)
+
+    wb = Workbook()
+    file_path = 'C:\\Users\\jatin\\Desktop\\queens.xlsx'
+    # wb = load_workbook(file_path)
+    sheet = wb.active
+    for i in range(len(clist)):
+        sheet.cell(i + 1, 1).value = clist[i].count
+        sheet.cell(i + 1, 2).value = clist[i].course
+        sheet.cell(i + 1, 3).value = clist[i].year
+        sheet.cell(i + 1, 4).value = clist[i].subject
+        sheet.cell(i + 1, 5).value = clist[i].link
+    wb.save(file_path)

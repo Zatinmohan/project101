@@ -2,6 +2,9 @@ from bs4 import BeautifulSoup
 from requests_html import HTMLSession
 from selenium import webdriver
 import requests
+from courses_list import course
+from openpyxl import load_workbook,Workbook
+
 
 def simple_link(url):                                                                           #non javascript
     headers = {'User-Agent': 'Mozilla/5.0'}
@@ -10,7 +13,6 @@ def simple_link(url):                                                           
     return html
 
 def javascript_link(url):                                                                       #if Page is having javascript
-
     op = webdriver.FirefoxOptions()
     op.add_argument("--headless")
     driver = webdriver.Firefox(options=op)
@@ -30,14 +32,14 @@ def category(html_page):
 
     for i in div:
         count+=1
-        course = i.find('div',class_='title').find('a').text
+        cc = i.find('div',class_='title').find('a').text
         link = baseUrl + i.find('div',class_='title').find('a').attrs['href'] + backUrl
-        print(count.__str__() + " " + course + " " + link)
-        inside_course(count,course,link)
+        print(count.__str__() + " " + cc + " " + link)
+        inside_course(count,cc,link)
 
         #print(course)
 
-def inside_course(count,course,link):
+def inside_course(count,cc,link):
     year = "Year "
     c=0
     page = simple_link(link)
@@ -50,17 +52,31 @@ def inside_course(count,course,link):
     for i in table:
         c+=1
         year = year + c.__str__()
-        print(year)
+        #print(year)
         tr = i.find('tbody').find_all('tr')
         for j in tr:
             subject = j.find('td').text
-            print(subject)
+            clist.append(course(count, cc, link, year, subject))
+            #print(subject)
 
         year = year[0:4]
         print('\n')
 
 if __name__ == '__main__':
+    clist = []
     url = 'https://www.manchester.ac.uk/study/undergraduate/courses/2021/'
     html_page = javascript_link(url)
 
     category(html_page)
+
+    wb = Workbook()
+    file_path = 'C:\\Users\\jatin\\Desktop\\manchaster.xlsx'
+    # wb = load_workbook(file_path)
+    sheet = wb.active
+    for i in range(len(clist)):
+        sheet.cell(i + 1, 1).value = clist[i].count
+        sheet.cell(i + 1, 2).value = clist[i].course
+        sheet.cell(i + 1, 3).value = clist[i].year
+        sheet.cell(i + 1, 4).value = clist[i].subject
+        sheet.cell(i + 1, 5).value = clist[i].link
+    wb.save(file_path)

@@ -1,6 +1,8 @@
 from bs4 import BeautifulSoup
 from requests_html import HTMLSession
 import requests
+from courses_list import course
+from openpyxl import load_workbook,Workbook
 
 def simple_link(url):                                                                           #non javascript
     headers = {'User-Agent': 'Mozilla/5.0'}
@@ -9,6 +11,7 @@ def simple_link(url):                                                           
     return html
 
 if __name__ == '__main__':
+    clist = []
     url = "https://www.imperial.ac.uk/study/ug/courses"
     html_page = simple_link(url)
 
@@ -90,14 +93,29 @@ if __name__ == '__main__':
                 try:
                     xx = ul.find_all('li')
                     for j in ul.find_all('li'):
-                        course = j.text
-                        print(" " + year + " " + course)
+                        cc = j.text
+                        clist.append(course(count, course_title, link, year, cc))
+                        #print(" " + year + " " + course)
 
                 except:
                     p = i.find('p')
-                    course = p.text
-                    print(" " + year + " " + course)
+                    cc = p.text
+                    clist.append(course(count, course_title, link, year, cc))
+                    #print(" " + year + " " + course)
             print('\n')
 
         else:
+            clist.append(course(count, course_title, link, "Null", "Null"))
             print("Proble with page " + count.__str__() + "\n")
+
+    wb = Workbook()
+    file_path = 'C:\\Users\\jatin\\Desktop\\imperial.xlsx'
+    # wb = load_workbook(file_path)
+    sheet = wb.active
+    for i in range(len(clist)):
+        sheet.cell(i + 1, 1).value = clist[i].count
+        sheet.cell(i + 1, 2).value = clist[i].course
+        sheet.cell(i + 1, 3).value = clist[i].year
+        sheet.cell(i + 1, 4).value = clist[i].subject
+        sheet.cell(i + 1, 5).value = clist[i].link
+    wb.save(file_path)

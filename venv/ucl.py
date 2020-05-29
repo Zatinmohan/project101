@@ -2,6 +2,8 @@ from bs4 import BeautifulSoup
 from requests_html import HTMLSession
 from selenium import webdriver
 import requests
+from courses_list import course
+from openpyxl import load_workbook,Workbook
 
 def simple_link(url):                                                                           #non javascript
     headers = {'User-Agent': 'Mozilla/5.0'}
@@ -51,18 +53,22 @@ def inside_course(count,course_code,course_name,link):
         try:
             tag = tabs[i].find_all('p')[1]
             if(len(tag)==0):
-                print(year)
+                #print(year)
                 ul_tag = tabs[i].find('ul').find_all('li')
                 for x in ul_tag:
                     subject = x.text
-                    print(subject)
+                    clist.append(course(count, course_name, link, year, subject))
+                    #print(subject)
             else:
                 subject = str(tag).split('<br/>')
 
                 subject[0] = subject[0].replace('<p>', '')
                 subject[len(subject) - 1] = subject[len(subject) - 1].replace('</p>', '')
-                print(year)
-                print(subject)
+                for xx in subject:
+                    clist.append(course(count, course_name, link, year, xx))
+                #print(year)
+                #print(subject)
+
 
         except:
             try:
@@ -70,14 +76,29 @@ def inside_course(count,course_code,course_name,link):
                 ul_tag = tabs[i].find('ul').find_all('li')
                 for x in ul_tag:
                     subject = x.text
-                    print(subject)
+                    clist.append(course(count, course_name, link, year, subject))
+                    #print(subject)
             except:
                 subject = "Year Abroad"
-                print(year)
-                print(subject)
+                clist.append(course(count, course_name, link, year, subject))
+                #print(year)
+                #print(subject)
 
 if __name__ == '__main__':
+    clist = []
     url = 'https://www.ucl.ac.uk/digital-presence-services/ugdegrees/www/degreesearch.php?collection=current'
     html_page = simple_link(url)
 
     course_list(html_page)
+
+    wb = Workbook()
+    file_path = 'C:\\Users\\jatin\\Desktop\\ucl.xlsx'
+    # wb = load_workbook(file_path)
+    sheet = wb.active
+    for i in range(len(clist)):
+        sheet.cell(i + 1, 1).value = clist[i].count
+        sheet.cell(i + 1, 2).value = clist[i].course
+        sheet.cell(i + 1, 3).value = clist[i].year
+        sheet.cell(i + 1, 4).value = clist[i].subject
+        sheet.cell(i + 1, 5).value = clist[i].link
+    wb.save(file_path)

@@ -2,6 +2,8 @@ from bs4 import BeautifulSoup
 from requests_html import HTMLSession
 from selenium import webdriver
 import requests
+from courses_list import course
+from openpyxl import load_workbook,Workbook
 
 def simple_link(url):                                                                           #non javascript
     headers = {'User-Agent': 'Mozilla/5.0'}
@@ -83,18 +85,21 @@ def main_courses(count,in_course):
                     div = sec.find('div',class_='tab-content').find_all('div')[j].find('ul').find_all('li')
                     year = ul[j].text
                     print(year)
-                    #print(div)
                     for k in range(0,len(div)):
                         try:
                             subject = div[k].find('strong').text
-                            print(" " + subject)
+                            clist.append(course(count, course_name, i, year, subject))
+                            #print(" " + subject)
 
                         except:
                             subject = div[k].text
-                            print(" " + subject)
+                            clist.append(course(count, course_name, i, year, subject))
+                            #print(" " + subject)
                 except:
                     div = sec.find('div',class_='tab-content').find_all('div')[j].find('p')
-                    print(" " + subject)
+                    subject = div.text
+                    clist.append(course(count, course_name, i, year, subject))
+                    #print(" " + subject)
 
                 print('\n')
             print('\n')
@@ -107,11 +112,25 @@ def main_courses(count,in_course):
             for x in sec:
                 subject = x.find('strong').text
                 year = "Year 1"
-                print(year)
-                print(" " + subject)
+                #print(year)
+                #print(" " + subject)
+                clist.append(course(count, course_name, i, year, subject))
                 print('\n')
 
 if __name__ == '__main__':
+    clist = []
     url = "https://www.st-andrews.ac.uk/subjects/"
     html_page = simple_link(url)
     category(html_page)
+
+    wb = Workbook()
+    file_path = 'C:\\Users\\jatin\\Desktop\\andrews.xlsx'
+    # wb = load_workbook(file_path)
+    sheet = wb.active
+    for i in range(len(clist)):
+        sheet.cell(i + 1, 1).value = clist[i].count
+        sheet.cell(i + 1, 2).value = clist[i].course
+        sheet.cell(i + 1, 3).value = clist[i].year
+        sheet.cell(i + 1, 4).value = clist[i].subject
+        sheet.cell(i + 1, 5).value = clist[i].link
+    wb.save(file_path)

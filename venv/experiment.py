@@ -17,57 +17,26 @@ def javascript_link(url):                                                       
     return html
 
 
-def oxfordcourses(html):
-    section1 = html.find('section', class_='visible-body')
-    section2 = section1.find('section', class_='page-level page-content')
-    div1 = section2.find('div', class_='wrapper')
-    return div1
+def oxfordcourses(html_page):
+    body = html_page.find('body')
+    div = body.find('div', class_='dialog-off-canvas-main-canvas').find('div', class_='off-canvas-content').find(
+        'main').find('section').find('div', class_='row page-body')
+    div = div.find('div', class_='single-course-modules').find_all('div', class_='tabs-panel')
+    year = "Year "
+    c = 1
+    for i in div:
+        year = year + c.__str__()
+        c+=1
+        print(year)
+        subject = i.find('p').text
+        print(subject)
+        year = year[0:4]
+
 
 if __name__ == '__main__':
-    html_page = simple_link('http://www.ox.ac.uk/admissions/undergraduate/courses/course-listing')
-    div = oxfordcourses(html_page)
-    courselink = []
-
-    section3 = div.find('section', class_='page-content-level column page-content-main')
-    div2 = section3.find('div', class_='ds-1col node node-page view-mode-oxweb_full_content clearfix')
-
-    table = div2.find('table')
-    anchor = table.find_all('a')
-
-    for links in anchor:
-        #courselink.append("http:"+links['href'])
-        course_name = links.text                        #Course Name
-        s = "http:"+links['href']                       #Parsing each and every Course page
-        html = javascript_link(s)
-        div_tag = oxfordcourses(html)                   #Same Pattern
-
-        div3 = div_tag.find('div',class_='row space-header')
-        section4 = div3.find('section',class_='page-content-level column page-content-main').find('section',class_='page-content-container main-content')
-        div4 = section4.find('div',class_='ds-1col node node-course view-mode-oxweb_full_content clearfix').find('div',class_='field field-name-field-body-multiple field-type-text-long field-label-hidden')
-        div5 = div4.find('div',class_='field-items').find('div',class_='field-item even').find('div',class_='ui-tabs-panel ui-widget-content ui-corner-bottom')
-        div6 = div5.find('div',class_='field field-name-field-intro field-type-text-long field-label-hidden').find('span',class_='field-item-single').find('div',class_='audience-copy')
-        table2 = div6.find('tbody')
-
-        tr = table2.find_all('tr')
-
-        data = [tag.text for tag in tr[0]]
-        course_code = data[2]
-        duration = data[5]
-
-        div7 = div4.find('div',class_='field-item odd').find('div',class_='ui-tabs-panel ui-widget-content ui-corner-bottom').find('table')
-        table3 = div7.find('tbody')
-        tr =  table3.find_all('tr')
-
-        for i in range(1,len(tr),2):
-            year = tr[i-1].text
-            l = tr[i].find('ul').find('li')
-            print(course_code + " " + course_name + " " + duration)
-
-            for j in l.find('ul'):
-                desp = j.text
-                print(" "+year+": " + " " +desp)
-
-            print('\n')
-    #print(courselink)
+    url = 'https://search.ncl.ac.uk/s/redirect?collection=neu-web-courses&url=https%3A%2F%2Fwww.ncl.ac.uk%2Fundergraduate%2Fdegrees%2Fn404%2F&auth=aFj77ZkomEuK3Dv94qYY%2FQ&profile=_default&rank=24&query=%7CstencilsCourseType%3Aundergraduate'
+    html_page = simple_link(url)
+    body = html_page.find('body')
+    print(body)
 
 

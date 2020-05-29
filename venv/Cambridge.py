@@ -2,6 +2,8 @@ from bs4 import BeautifulSoup
 from requests_html import HTMLSession
 import requests
 from selenium import webdriver
+from courses_list import course
+from openpyxl import load_workbook,Workbook
 
 def simple_link(url):                                                                           #non javascript
     headers = {'User-Agent': 'Mozilla/5.0'}
@@ -33,6 +35,7 @@ def category(html):
             count+=1
             course_name = j.find('a').text
             links = baseUrl + j.find('a').attrs['href']
+            print(count.__str__() + " " + course_name + " " + links)
             inside_course(count,course_name,links)
 
 def inside_course(count,course_name,links):
@@ -54,20 +57,34 @@ def inside_course(count,course_name,links):
 
             for k in li:
                 subject = k.text
-                print(" " + year + " " + subject)
+                clist.append(course(count,course_name,links,year,subject))
+                #print(" " + year + " " + subject)
 
         except:
 
             p = div_tag.find_all('p')
             subject = p[i].text
-
+            clist.append(course(count, course_name, links, year, subject))
             print(year + " " + subject)
 
     print('\n')
 
 if __name__ == '__main__':
+    clist = []
     baseUrl = "https://www.undergraduate.study.cam.ac.uk"
     url = "https://www.undergraduate.study.cam.ac.uk/courses"
 
     html = simple_link(url)
     category(html)
+
+    wb = Workbook()
+    file_path = 'C:\\Users\\jatin\\Desktop\\cambridge.xlsx'
+    #wb = load_workbook(file_path)
+    sheet = wb.active
+    for i in range(len(clist)):
+        sheet.cell(i + 1, 1).value = clist[i].count
+        sheet.cell(i + 1, 2).value = clist[i].course
+        sheet.cell(i + 1, 3).value = clist[i].year
+        sheet.cell(i + 1, 4).value = clist[i].subject
+        sheet.cell(i + 1, 5).value = clist[i].link
+    wb.save(file_path)
