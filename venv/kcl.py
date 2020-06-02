@@ -66,6 +66,7 @@ def inside_subject(count,course_name,link):
     body = page.find('body')
     div = body.find('div',class_='box box-blue').find('div').find_all('div')
 
+
     for i in div:
         year = year + c.__str__()
         print(year)

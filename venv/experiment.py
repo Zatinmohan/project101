@@ -1,42 +1,91 @@
 from bs4 import BeautifulSoup
 from requests_html import HTMLSession
+from selenium import webdriver
 import requests
-import re
+from time import sleep
+from courses_list import course
+from openpyxl import load_workbook,Workbook
 
 def simple_link(url):                                                                           #non javascript
-    page = requests.get(url)
-    html = BeautifulSoup(page.content, 'html.parser')
-    return html
+
+    while(True):
+        try:
+            headers = {'User-Agent': 'Mozilla/5.0'}
+            page = requests.get(url,headers=headers)
+            html = BeautifulSoup(page.content, 'html.parser')
+            return html
+        except:
+            print("Website busy... wait ")
+            sleep(5)
+            continue
 
 def javascript_link(url):                                                                       #if Page is having javascript
-    session = HTMLSession()
-    resp = session.get(url)
-    resp.html.render(timeout=160)                                                               #160 Seconds --> Need to be bigger in case of slow internet
-    html = BeautifulSoup(resp.html.html, 'lxml')
-    session.close()
+
+    op = webdriver.FirefoxOptions()
+    op.add_argument("--headless")
+    driver = webdriver.Firefox(options=op)
+    driver.get(url)
+    html = BeautifulSoup(driver.page_source,'html.parser')
+    driver.quit()
     return html
 
+def category(html_page):
+    #body = html_page.find('body')
+    #div = body.find('article').find('ul',class_='search-result-list')
+    li = html_page.find('ul', class_='search-result-list').find_all('li',class_='search-result-list__item')
 
-def oxfordcourses(html_page):
+    for i in li:
+        course_name = i.find('h4').find('a').text
+        link = i.find('h4').find('a').attrs['href']
+        nlist.append(course_name)
+        llist.append(link)
+
+def category(html_page):
     body = html_page.find('body')
-    div = body.find('div', class_='dialog-off-canvas-main-canvas').find('div', class_='off-canvas-content').find(
-        'main').find('section').find('div', class_='row page-body')
-    div = div.find('div', class_='single-course-modules').find_all('div', class_='tabs-panel')
-    year = "Year "
-    c = 1
+    div = body.find('main').find('div',class_='container').find('div',class_='col-md-9 col-lg-6').find_all('table')
+    count=0
     for i in div:
-        year = year + c.__str__()
-        c+=1
-        print(year)
-        subject = i.find('p').text
-        print(subject)
-        year = year[0:4]
+        tr = i.find('tbody').find_all('tr')
+        for j in tr:
+            count+=1
+            course_name = j.find('a').text
+            link = j.find('a').attrs['href']
+            print(count.__str__() + " " + course_name + " " + link)
+            inside_course(count,course_name,link)
 
+def inside_course(count,course_name,link):
+    page = javascript_link(link)
+    body = page.find('body')
+    try:
+        div = body.find('main').find('div', class_='content-toggle').find('div', class_='col-md-10 offset-md-1').find_all('div',class_='accordion')
+    except:
+        div = body.find('main').find('div',class_='content-toggle').find('div',class_='col-md-8').find_all('div',class_='accordion')
+
+    for i in div:
+        try:
+            tr = i.find('table',class_='table').find('tbody').find_all('tr')
+            year = i.find_previous('h3').text
+            print(year)
+            for j in tr:
+                subject = j.find('td').find('a').text
+                print(' ' + subject)
+        except:
+            try:
+                d_tag = body.find('main').find('div', class_='content-toggle').find('div', class_='col-md-10 offset-md-1')
+                h3 = d_tag.find_all('h3')
+            except:
+                print("Expect")
+                d_tag = body.find('main').find('div', class_='content-toggle').find('div',class_='col-md-8')
+                h3 = d_tag.find_all('h3')
+            for j in h3:
+                year = j.text
+                print(year)
+                subject = j.find_next('p').find_next('p').text
+                print(subject)
+            break
+        print('\n')
 
 if __name__ == '__main__':
-    url = 'https://search.ncl.ac.uk/s/redirect?collection=neu-web-courses&url=https%3A%2F%2Fwww.ncl.ac.uk%2Fundergraduate%2Fdegrees%2Fn404%2F&auth=aFj77ZkomEuK3Dv94qYY%2FQ&profile=_default&rank=24&query=%7CstencilsCourseType%3Aundergraduate'
-    html_page = simple_link(url)
-    body = html_page.find('body')
-    print(body)
-
-
+    url = 'https://www.cardiff.ac.uk/study/undergraduate/courses/2020/chemistry-bsc'
+    #html_page = simple_link(url)
+    inside_course(0,"NAME",url)
