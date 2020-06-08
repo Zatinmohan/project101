@@ -7,7 +7,6 @@ from courses_list import course
 from openpyxl import load_workbook,Workbook
 
 def simple_link(url):                                                                           #non javascript
-
     while(True):
         try:
             headers = {'User-Agent': 'Mozilla/5.0'}
@@ -15,77 +14,102 @@ def simple_link(url):                                                           
             html = BeautifulSoup(page.content, 'html.parser')
             return html
         except:
-            print("Website busy... wait ")
+            print("Website busy...Please wait")
             sleep(5)
             continue
 
+
 def javascript_link(url):                                                                       #if Page is having javascript
 
-    op = webdriver.FirefoxOptions()
-    op.add_argument("--headless")
-    driver = webdriver.Firefox(options=op)
-    driver.get(url)
-    html = BeautifulSoup(driver.page_source,'html.parser')
-    driver.quit()
-    return html
+    while(True):
+        try:
+            op = webdriver.FirefoxOptions()
+            op.add_argument("--headless")
+            driver = webdriver.Firefox(options=op)
+            driver.get(url)
+            html = BeautifulSoup(driver.page_source,'html.parser')
+            driver.quit()
+            return html
+        except:
+            print("Website busy.. Trying again")
+            sleep(5)
+            continue
 
 def category(html_page):
-    #body = html_page.find('body')
-    #div = body.find('article').find('ul',class_='search-result-list')
-    li = html_page.find('ul', class_='search-result-list').find_all('li',class_='search-result-list__item')
-
-    for i in li:
-        course_name = i.find('h4').find('a').text
-        link = i.find('h4').find('a').attrs['href']
-        nlist.append(course_name)
-        llist.append(link)
-
-def category(html_page):
+    baseUrl = 'https://www.exeter.ac.uk'
+    endUrl = '#course-content'
     body = html_page.find('body')
-    div = body.find('main').find('div',class_='container').find('div',class_='col-md-9 col-lg-6').find_all('table')
+    div = body.find('div',id='all-courses-A-Z').find('ul',class_='course-list').find_all('li')
     count=0
     for i in div:
-        tr = i.find('tbody').find_all('tr')
-        for j in tr:
-            count+=1
-            course_name = j.find('a').text
-            link = j.find('a').attrs['href']
-            print(count.__str__() + " " + course_name + " " + link)
-            inside_course(count,course_name,link)
+        count+=1
+        course_name = i.find('a').text
+        link = baseUrl + i.find('a').attrs['href'] + endUrl
+        print(count.__str__() + " " + course_name + " " + link)
+        if(course_name=='Foundation' or link=='https://www.exeter.ac.uk/undergraduate/courses/foundation/internationalyearone/#course-content'):
+            clist.append()
+        else:
+            inside_course(count, course_name, link)
 
 def inside_course(count,course_name,link):
     page = javascript_link(link)
     body = page.find('body')
-    try:
-        div = body.find('main').find('div', class_='content-toggle').find('div', class_='col-md-10 offset-md-1').find_all('div',class_='accordion')
-    except:
-        div = body.find('main').find('div',class_='content-toggle').find('div',class_='col-md-8').find_all('div',class_='accordion')
+    div = body.find('div',id='course-content-accordion').find_all('div',class_='panel panel-default')
 
     for i in div:
+        year = i.find('div',class_='panel-heading collapsed').find('h4').text
+        print(year)
+        d_tag = i.find('div',class_='panel-collapse collapse')
         try:
-            tr = i.find('table',class_='table').find('tbody').find_all('tr')
-            year = i.find_previous('h3').text
-            print(year)
-            for j in tr:
-                subject = j.find('td').find('a').text
-                print(' ' + subject)
-        except:
+            iframe = "https:"+d_tag.find('iframe').attrs['src']
             try:
-                d_tag = body.find('main').find('div', class_='content-toggle').find('div', class_='col-md-10 offset-md-1')
-                h3 = d_tag.find_all('h3')
+                p = simple_link(iframe).find('body').find('table').find_all('tr')
+
+                for j in range(1,len(p)):
+                    try:
+                        subject = p[j].find_all('td')[1].text
+                        clist.append(course(count, course_name, link, year, subject))
+                    except:
+                        break
+
+                    print(subject)
+
             except:
-                print("Expect")
-                d_tag = body.find('main').find('div', class_='content-toggle').find('div',class_='col-md-8')
-                h3 = d_tag.find_all('h3')
-            for j in h3:
-                year = j.text
-                print(year)
-                subject = j.find_next('p').find_next('p').text
-                print(subject)
-            break
+                try:
+                    p = simple_link(iframe).find('body').find('p')
+                    subject = p.text
+                    print(subject)
+                    clist.append(course(count, course_name, link, year, subject))
+                except:
+                    li = simple_link(iframe).find('body').find('ul').find_all('li')
+                    for j in li:
+                        subject = j.text
+                        print(subject)
+                        clist.append(course(count, course_name, link, year, subject))
+
+        except:
+            p = d_tag.find('p')
+            subject = p.text
+            print(subject)
+            clist.append(course(count, course_name, link, year, subject))
         print('\n')
 
+
+
 if __name__ == '__main__':
-    url = 'https://www.cardiff.ac.uk/study/undergraduate/courses/2020/chemistry-bsc'
-    #html_page = simple_link(url)
-    inside_course(0,"NAME",url)
+    clist = []
+    url = 'https://www.exeter.ac.uk/undergraduate/courses/foundation/foundation/#course-content'
+    html_page = javascript_link(url)
+    category(html_page)
+
+    '''wb = Workbook()
+    file_path = 'C:\\Users\\jatin\\Desktop\\exeter.xlsx'
+    # wb = load_workbook(file_path)
+    sheet = wb.active
+    for i in range(len(clist)):
+        sheet.cell(i + 1, 1).value = clist[i].count
+        sheet.cell(i + 1, 2).value = clist[i].course
+        sheet.cell(i + 1, 3).value = clist[i].year
+        sheet.cell(i + 1, 4).value = clist[i].subject
+        sheet.cell(i + 1, 5).value = clist[i].link
+    wb.save(file_path)'''
